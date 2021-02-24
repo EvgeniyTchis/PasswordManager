@@ -7,15 +7,17 @@ import Lib
 import GHC.Generics
 import Data.Aeson
 import Data.Aeson.Types
-import Data.ByteString.Lazy.Char8 as BL
-import Data.ByteString.Char8 as BS
+import qualified Data.ByteString.Lazy.Char8 as BL
+import qualified Data.ByteString.Char8 as BS
 import Data.Either
-import System.IO as IO
+import System.IO
 import Data.Maybe
 import Jose.Jws
 import Jose.Jwa
 import Jose.Jwt
 import Crypto.Password as PS
+import qualified Graphics.UI.Threepenny as UI
+import Graphics.UI.Threepenny.Core
 
 data Entry = Entry 
 -- This represents an entry by the user
@@ -40,17 +42,17 @@ main :: IO [Entry]
 -- Initializes the application and handles the creation and loading of databases.
 main =
     do 
-        Prelude.putStrLn "Welcome to your password manager."
-        Prelude.putStrLn "Type (N) to create a new database and (L) to load an existing database and (E) to exit."
-        response <- IO.getLine
-        if (response `Prelude.elem` ["N", "n", "(N)", "(n)"]) 
+        putStrLn "Welcome to your password manager."
+        putStrLn "Type (N) to create a new database and (L) to load an existing database and (E) to exit."
+        response <- getLine
+        if (response `elem` ["N", "n", "(N)", "(n)"]) 
             then createNew
-            else if (response `Prelude.elem` ["L", "l", "(L)", "(l)"]) 
+            else if (response `elem` ["L", "l", "(L)", "(l)"]) 
                 then loadDatabase
-                else if (response `Prelude.elem` ["E", "e", "(E)", "(e)"]) 
+                else if (response `elem` ["E", "e", "(E)", "(e)"]) 
                     then return []
                     else do
-                        Prelude.putStrLn "Invalid response, please try again."
+                        putStrLn "Invalid response, please try again."
                         main
 
 
@@ -59,10 +61,10 @@ createNew :: IO [Entry]
 -- also initializes the database (this is the empty list, called entries)
 createNew = 
     do
-        Prelude.putStrLn "What would you like to name your database?"
-        databaseName <- IO.getLine
-        Prelude.putStrLn "What would you like your master password to be?"
-        masterPassword <- IO.getLine
+        putStrLn "What would you like to name your database?"
+        databaseName <- getLine
+        putStrLn "What would you like your master password to be?"
+        masterPassword <- getLine
         let databasePath = databaseName ++ ".json"                                               -- Make file extension .json can change to something else if needed
         let entries = [] :: [Entry]
         newEntries <- mainScreen databaseName databasePath masterPassword entries                -- Here we enter the main program
@@ -71,14 +73,14 @@ createNew =
 loadDatabase :: IO [Entry]
 loadDatabase = 
     do
-        Prelude.putStrLn "What is the name of your database file?"
-        databaseName <- IO.getLine
-        Prelude.putStrLn "Please enter the full path to your database file."
-        databasePath <- IO.getLine
-        Prelude.putStrLn "Please enter your master password."
-        masterPassword <- IO.getLine
+        putStrLn "What is the name of your database file?"
+        databaseName <- getLine
+        putStrLn "Please enter the full path to your database file."
+        databasePath <- getLine
+        putStrLn "Please enter your master password."
+        masterPassword <- getLine
 
-        file <- Prelude.readFile databasePath                                                    -- Read the contents of the encrypted file
+        file <- readFile databasePath                                                    -- Read the contents of the encrypted file
         let tryDecrypt = hmacDecode (BS.pack masterPassword) (BS.pack file)                      -- This has type (Either JwtError Jws)
         if isRight tryDecrypt                                                                    -- If the type is Jws (ie. the decryption as successfull) then decode JSON
             then 
@@ -86,16 +88,16 @@ loadDatabase =
                     let Right decryptedText = tryDecrypt
                     let loadedEntries = Data.Aeson.decode (BL.fromStrict (snd decryptedText)) :: Maybe [Entry]
                     let entries = fromJust loadedEntries
-                    Prelude.putStrLn "====================================================="
-                    Prelude.putStrLn "Entries Successfully loaded!"
-                    Prelude.putStrLn "====================================================="
+                    putStrLn "====================================================="
+                    putStrLn "Entries Successfully loaded!"
+                    putStrLn "====================================================="
                     newEntries <- mainScreen databaseName databasePath masterPassword entries    -- Here we enter the main program
                     return []                                                                    -- Have to return IO [Entry] because the main function retursn IO [Entry]
             else                                                                                 
                 do                                                                               -- Otherwise the type is JwtError, which indicates an incorrect password
-                    Prelude.putStrLn "====================================================="
-                    Prelude.putStrLn "Incorrect Password. Please try again."
-                    Prelude.putStrLn "====================================================="
+                    putStrLn "====================================================="
+                    putStrLn "Incorrect Password. Please try again."
+                    putStrLn "====================================================="
                     main                                                                         -- Return to main to either create new database or re-try with different password
                     return []
 
@@ -107,57 +109,57 @@ mainScreen :: String -> String -> String -> [Entry] -> IO [Entry]
 -- **NOTE- this is still really messy :) **
 mainScreen name path mpass entries = 
     do
-        Prelude.putStrLn "====================================================="
-        Prelude.putStrLn "Welcome to your database, what would you like to do?"
-        Prelude.putStrLn "Type [G] to get a password from an entry."
-        Prelude.putStrLn "Type [L] to list your current entries."
-        Prelude.putStrLn "Type [A] to add another entry."
-        Prelude.putStrLn "Type [R] to remove an entry."
-        Prelude.putStrLn "Type [E] to edit an entry."
-        Prelude.putStrLn "Type [P] to generate a password."
-        Prelude.putStrLn "Type [S] to save and exit."
-        Prelude.putStrLn "====================================================="
-        response <- IO.getLine
-        if (response `Prelude.elem` ["G", "g", "(G)", "(g)"])
+        putStrLn "====================================================="
+        putStrLn "Welcome to your database, what would you like to do?"
+        putStrLn "Type [G] to get a password from an entry."
+        putStrLn "Type [L] to list your current entries."
+        putStrLn "Type [A] to add another entry."
+        putStrLn "Type [R] to remove an entry."
+        putStrLn "Type [E] to edit an entry."
+        putStrLn "Type [P] to generate a password."
+        putStrLn "Type [S] to save and exit."
+        putStrLn "====================================================="
+        response <- getLine
+        if (response `elem` ["G", "g", "(G)", "(g)"])
             then do                                                                         -- This block of code retrieves password of a specified entry
-                Prelude.putStrLn "Enter the name of the entry whose password you want."
-                entryName <- IO.getLine
-                Prelude.putStrLn (getPassword entries entryName)
+                putStrLn "Enter the name of the entry whose password you want."
+                entryName <- getLine
+                putStrLn (getPassword entries entryName)
                 mainScreen name path mpass entries                                          -- Return to main-screen after performing user-specified function
-            else if (response `Prelude.elem` ["L", "l", "(L)", "(l)"])                      -- This returning occurs in every block except the save/exit block
+            else if (response `elem` ["L", "l", "(L)", "(l)"])                      -- This returning occurs in every block except the save/exit block
                 then do
                     listEntries entries                                                     -- This block prints the list of current entries to terminal
                     mainScreen name path mpass entries
-                else if (response `Prelude.elem` ["A", "a", "(A)", "(a)"]) 
+                else if (response `elem` ["A", "a", "(A)", "(a)"]) 
                     then do                                                                 -- This block takes in the information for a new Entry from the user
-                        Prelude.putStrLn "What is the name of your new entry?"              -- Creates the entry and adds it to the database
-                        newName <- IO.getLine
-                        Prelude.putStrLn "What is the username of your new entry?"
-                        newUser <- IO.getLine
-                        Prelude.putStrLn "What is the password of your new entry?"
-                        newPass <- IO.getLine
+                        putStrLn "What is the name of your new entry?"              -- Creates the entry and adds it to the database
+                        newName <- getLine
+                        putStrLn "What is the username of your new entry?"
+                        newUser <- getLine
+                        putStrLn "What is the password of your new entry?"
+                        newPass <- getLine
                         let newEntries = addEntry entries (Entry newName newUser newPass)
-                        Prelude.putStrLn "Completed"                                         -- Not sure if these completed messages are useful, can remove
+                        putStrLn "Completed"                                         -- Not sure if these completed messages are useful, can remove
                         mainScreen name path mpass newEntries
-                    else if (response `Prelude.elem` ["R", "r", "(R)", "(r)"]) 
+                    else if (response `elem` ["R", "r", "(R)", "(r)"]) 
                         then do                                                              -- This block removes an entry from the database
-                            Prelude.putStrLn "What is the name of the entry you wish to remove?"
-                            entryName <- IO.getLine
+                            putStrLn "What is the name of the entry you wish to remove?"
+                            entryName <- getLine
                             let newEntries = removeEntry entries entryName
-                            Prelude.putStrLn "Completed"
+                            putStrLn "Completed"
                             mainScreen name path mpass newEntries
-                        else if (response `Prelude.elem` ["E", "e", "(E)", "(e)"])
+                        else if (response `elem` ["E", "e", "(E)", "(e)"])
                             then do                                                           -- This block edits an entry rom the the database (more info in editOptions function)
-                                Prelude.putStrLn "What is the name of the entry you wish to edit?"
-                                entryName <- IO.getLine
-                                Prelude.putStrLn "Would you like to edit the name [N], username [U], or password [P]?"
-                                editParam <- IO.getLine
-                                Prelude.putStrLn "Enter the new value of the parameter."
-                                newParam <- IO.getLine
+                                putStrLn "What is the name of the entry you wish to edit?"
+                                entryName <- getLine
+                                putStrLn "Would you like to edit the name [N], username [U], or password [P]?"
+                                editParam <- getLine
+                                putStrLn "Enter the new value of the parameter."
+                                newParam <- getLine
                                 let newEntries = editOptions entries entryName editParam newParam
-                                Prelude.putStrLn "Completed"
+                                putStrLn "Completed"
                                 mainScreen name path mpass newEntries
-                                else if (response `Prelude.elem` ["S", "s", "(S)", "(s)"])
+                                else if (response `elem` ["S", "s", "(S)", "(s)"])
                                     then do                                                      -- This block enccodes the database into JSON, encrypts it, and then writes to file
                                         let jstring = Data.Aeson.encode entries                  -- Here we encode our [Entry] (ie. our database) into JSON, the function returns a lazy ByteString
                                         let strictEntries = BL.toStrict jstring                  -- Convert the lazy ByteString to strict ByteString for use in encryption function
@@ -165,9 +167,9 @@ mainScreen name path mpass entries =
                                         let Right (Jwt jwt) = hmacEncode HS256 key strictEntries -- Encrypt function has type (Either JwtError Jwt), Right is successfull encryption returns type Jwt
                                         BS.writeFile path jwt                                    -- Write the encrypted JSON into a file and exit application.
                                         return []
-                                    else if (response `Prelude.elem` ["P", "p", "(P)", "(p)"])
+                                    else if (response `elem` ["P", "p", "(P)", "(p)"])
                                         then do
-                                             Prelude.putStrLn "Your Generated Password is: "
+                                             putStrLn "Your Generated Password is: "
                                              let up = Uppercase
                                              let lo = Lowercase
                                              let di = Digit
@@ -178,10 +180,10 @@ mainScreen name path mpass entries =
                                              let pfSy = Include sy
                                              let pfLe = Length 14
                                              genPass <- PS.generatePassword [pfUp, pfLo, pfDi, pfSy, pfLe]
-                                             Prelude.putStrLn genPass
+                                             putStrLn genPass
                                              mainScreen name path mpass entries
                                         else do
-                                        Prelude.putStrLn "Invalid response, please try again."   -- If we recieve invalid input, simply print error message and return to main-screen
+                                        putStrLn "Invalid response, please try again."   -- If we recieve invalid input, simply print error message and return to main-screen
                                         mainScreen name path mpass entries
                     
 inDatabase :: [Entry] -> String -> Bool
@@ -202,10 +204,10 @@ getPassword ((Entry n _ p):t) entryName
 
 listEntries :: [Entry] -> IO ()
 -- Print a list of all current entries into the terminal
-listEntries [] = Prelude.putStrLn " "
+listEntries [] = putStrLn " "
 listEntries ((Entry n u p):t) = 
     do
-        Prelude.putStrLn (n ++ " " ++ u ++ " " ++ "********")
+        putStrLn (n ++ " " ++ u ++ " " ++ "********")
         listEntries t
 
 addEntry :: [Entry] -> Entry -> [Entry]
@@ -224,9 +226,9 @@ editOptions :: [Entry] -> String -> String -> String -> [Entry]
 -- Parses the user input and calls the appropriate edit function for the editParam
 -- as specified by the user.
 editOptions entries entryName editParam newParam
-    | editParam `Prelude.elem` ["[n]", "[N]", "n", "N"] = editEntryName entries entryName newParam
-    | editParam `Prelude.elem` ["[u]", "[U]", "u", "U"] = editEntryUser entries entryName newParam
-    | editParam `Prelude.elem` ["[p]", "[P]", "p", "P"] = editEntryPass entries entryName newParam
+    | editParam `elem` ["[n]", "[N]", "n", "N"] = editEntryName entries entryName newParam
+    | editParam `elem` ["[u]", "[U]", "u", "U"] = editEntryUser entries entryName newParam
+    | editParam `elem` ["[p]", "[P]", "p", "P"] = editEntryPass entries entryName newParam
     | otherwise = entries
 
 editEntryName :: [Entry] -> String -> String -> [Entry]
