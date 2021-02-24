@@ -15,6 +15,7 @@ import Data.Maybe
 import Jose.Jws
 import Jose.Jwa
 import Jose.Jwt
+import Crypto.Password as PS
 
 data Entry = Entry 
 -- This represents an entry by the user
@@ -113,6 +114,7 @@ mainScreen name path mpass entries =
         Prelude.putStrLn "Type [A] to add another entry."
         Prelude.putStrLn "Type [R] to remove an entry."
         Prelude.putStrLn "Type [E] to edit an entry."
+        Prelude.putStrLn "Type [P] to generate a password."
         Prelude.putStrLn "Type [S] to save and exit."
         Prelude.putStrLn "====================================================="
         response <- IO.getLine
@@ -163,10 +165,25 @@ mainScreen name path mpass entries =
                                         let Right (Jwt jwt) = hmacEncode HS256 key strictEntries -- Encrypt function has type (Either JwtError Jwt), Right is successfull encryption returns type Jwt
                                         BS.writeFile path jwt                                    -- Write the encrypted JSON into a file and exit application.
                                         return []
-                                    else do
+                                    else if (response `Prelude.elem` ["P", "p", "(P)", "(p)"])
+                                        then do
+                                             Prelude.putStrLn "Your Generated Password is: "
+                                             let up = Uppercase
+                                             let lo = Lowercase
+                                             let di = Digit
+                                             let sy = Symbol
+                                             let pfUp = Include up
+                                             let pfLo = Include lo
+                                             let pfDi = Include di
+                                             let pfSy = Include sy
+                                             let pfLe = Length 14
+                                             genPass <- PS.generatePassword [pfUp, pfLo, pfDi, pfSy, pfLe]
+                                             Prelude.putStrLn genPass
+                                             mainScreen name path mpass entries
+                                        else do
                                         Prelude.putStrLn "Invalid response, please try again."   -- If we recieve invalid input, simply print error message and return to main-screen
                                         mainScreen name path mpass entries
-
+                    
 inDatabase :: [Entry] -> String -> Bool
 -- Return true if the entry with the given name is in the database, false otherwise
 -- *** TODO - Need to make each entry name unique ***
