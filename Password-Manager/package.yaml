@@ -26,6 +26,7 @@ dependencies:
 - jose-jwt
 - threepenny-gui
 - passwords
+- ansi-terminal
 
 library:
   source-dirs: src
