@@ -18,6 +18,7 @@ import Jose.Jwt
 import Crypto.Password as PS
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
+import System.Console.ANSI
 
 data Entry = Entry 
 -- This represents an entry by the user
@@ -45,12 +46,15 @@ main =
         putStrLn "Welcome to your password manager."
         putStrLn "Type (N) to create a new database and (L) to load an existing database and (E) to exit."
         response <- getLine
-        if (response `elem` ["N", "n", "(N)", "(n)"]) 
-            then createNew
+        if (response `elem` ["N", "n", "(N)", "(n)"])
+            then
+            createNew
             else if (response `elem` ["L", "l", "(L)", "(l)"]) 
-                then loadDatabase
+                then
+                loadDatabase
                 else if (response `elem` ["E", "e", "(E)", "(e)"]) 
-                    then return []
+                    then
+                    return []
                     else do
                         putStrLn "Invalid response, please try again."
                         main
@@ -120,18 +124,22 @@ mainScreen name path mpass entries =
         putStrLn "Type [S] to save and exit."
         putStrLn "====================================================="
         response <- getLine
+                clearScreen
         if (response `elem` ["G", "g", "(G)", "(g)"])
-            then do                                                                         -- This block of code retrieves password of a specified entry
+            then do
+                clearScreen                                                                         -- This block of code retrieves password of a specified entry
                 putStrLn "Enter the name of the entry whose password you want."
                 entryName <- getLine
                 putStrLn (getPassword entries entryName)
                 mainScreen name path mpass entries                                          -- Return to main-screen after performing user-specified function
             else if (response `elem` ["L", "l", "(L)", "(l)"])                      -- This returning occurs in every block except the save/exit block
                 then do
+                    clearScreen
                     listEntries entries                                                     -- This block prints the list of current entries to terminal
                     mainScreen name path mpass entries
                 else if (response `elem` ["A", "a", "(A)", "(a)"]) 
-                    then do                                                                 -- This block takes in the information for a new Entry from the user
+                    then do
+                        clearScreen                                                                 -- This block takes in the information for a new Entry from the user
                         putStrLn "What is the name of your new entry?"              -- Creates the entry and adds it to the database
                         newName <- getLine
                         putStrLn "What is the username of your new entry?"
@@ -142,7 +150,8 @@ mainScreen name path mpass entries =
                         putStrLn "Completed"                                         -- Not sure if these completed messages are useful, can remove
                         mainScreen name path mpass newEntries
                     else if (response `elem` ["R", "r", "(R)", "(r)"]) 
-                        then do                                                              -- This block removes an entry from the database
+                        then do
+                            clearScreen                                                              -- This block removes an entry from the database
                             putStrLn "What is the name of the entry you wish to remove?"
                             entryName <- getLine
                             let newEntries = removeEntry entries entryName
@@ -150,6 +159,7 @@ mainScreen name path mpass entries =
                             mainScreen name path mpass newEntries
                         else if (response `elem` ["E", "e", "(E)", "(e)"])
                             then do                                                           -- This block edits an entry rom the the database (more info in editOptions function)
+                                clearScreen
                                 putStrLn "What is the name of the entry you wish to edit?"
                                 entryName <- getLine
                                 putStrLn "Would you like to edit the name [N], username [U], or password [P]?"
@@ -161,6 +171,7 @@ mainScreen name path mpass entries =
                                 mainScreen name path mpass newEntries
                                 else if (response `elem` ["S", "s", "(S)", "(s)"])
                                     then do                                                      -- This block enccodes the database into JSON, encrypts it, and then writes to file
+                                        clearScreen
                                         let jstring = Data.Aeson.encode entries                  -- Here we encode our [Entry] (ie. our database) into JSON, the function returns a lazy ByteString
                                         let strictEntries = BL.toStrict jstring                  -- Convert the lazy ByteString to strict ByteString for use in encryption function
                                         let key = (BS.pack mpass)                                -- Convert master password into strict ByteString for use in encryption function
@@ -169,6 +180,7 @@ mainScreen name path mpass entries =
                                         return []
                                     else if (response `elem` ["P", "p", "(P)", "(p)"])
                                         then do
+                                             clearScreen
                                              putStrLn "Your Generated Password is: "
                                              let up = Uppercase
                                              let lo = Lowercase
