@@ -19,6 +19,7 @@ import Crypto.Password as PS
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 import System.Console.ANSI
+import System.Clipboard
 
 data Entry = Entry 
 -- This represents an entry by the user
