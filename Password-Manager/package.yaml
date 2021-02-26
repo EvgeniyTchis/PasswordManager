@@ -28,6 +28,7 @@ dependencies:
 - passwords
 - ansi-terminal
 - Clipboard
+- hspec
 
 library:
   source-dirs: src
