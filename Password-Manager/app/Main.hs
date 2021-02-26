@@ -124,13 +124,14 @@ mainScreen name path mpass entries =
         putStrLn "Type [S] to save and exit."
         putStrLn "====================================================="
         response <- getLine
-                clearScreen
+        clearScreen
         if (response `elem` ["G", "g", "(G)", "(g)"])
             then do
                 clearScreen                                                                         -- This block of code retrieves password of a specified entry
                 putStrLn "Enter the name of the entry whose password you want."
                 entryName <- getLine
-                putStrLn (getPassword entries entryName)
+                setClipboardString (getPassword entries entryName)                    -- copy to clipboard
+                putStrLn "Password has been copied to your clipboard"
                 mainScreen name path mpass entries                                          -- Return to main-screen after performing user-specified function
             else if (response `elem` ["L", "l", "(L)", "(l)"])                      -- This returning occurs in every block except the save/exit block
                 then do
