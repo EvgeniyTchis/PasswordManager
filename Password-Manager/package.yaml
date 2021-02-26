@@ -27,6 +27,7 @@ dependencies:
 - threepenny-gui
 - passwords
 - ansi-terminal
+- Clipboard
 
 library:
   source-dirs: src
