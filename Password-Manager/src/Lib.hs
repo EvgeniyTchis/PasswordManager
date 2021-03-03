@@ -65,16 +65,6 @@ start =
                     else do
                         putStrLn "Invalid response, please try again."
                         start
-        
-flushScreen :: Int -> IO ()
--- Cheeky function that just moves the terminal text from the top of the screen to the bottom
--- this is so that when we flush the screen later on the text doesn't seemingly magically
--- float down to the bottom of the terminal screen
-flushScreen 0 = do
-    putStrLn ""
-flushScreen num = do
-    putStrLn ""
-    flushScreen (num - 1)
 
 createNew :: IO [Entry]
 -- Creates new database by taking in relevant information such as file/database name, and master password
@@ -133,7 +123,6 @@ mainScreen :: String -> String -> String -> [Entry] -> IO [Entry]
 -- however they like. The user is able to retrieve passwords and list, add, remove, and edit entries. Additonally,
 -- the user is able to save and encrypt their database of entries for use with the app at a later time. Every option
 -- will return the user to this main-screen with the exception of the save option, which instead exits the application.
--- **NOTE- this is still really messy :) **
 mainScreen name path mpass entries = 
     do
         clearScreen
@@ -150,94 +139,171 @@ mainScreen name path mpass entries =
         response <- getLine
         clearScreen
         if (response `elem` ["G", "g", "(G)", "(g)"])
-            then do
-                clearScreen                                                                         -- This block of code retrieves password of a specified entry
-                putStrLn "Enter the name of the entry whose password you want."
-                entryName <- getLine
-                setClipboardString (getPassword entries entryName)                    -- copy to clipboard
-                putStrLn "Password has been copied to your clipboard"
-                putStrLn ""
-                putStrLn "Press any key to return to the main screen."
-                getResponse <- getLine
-                mainScreen name path mpass entries                                          -- Return to main-screen after performing user-specified function
-            else if (response `elem` ["L", "l", "(L)", "(l)"])                      -- This returning occurs in every block except the save/exit block
-                then do
-                    listEntries entries                                                     -- This block prints the list of current entries to terminal
-                    putStrLn ""
-                    putStrLn "Press any key to clear the list and return to the main screen."
-                    getResponse <- getLine
-                    mainScreen name path mpass entries
+            then handleGet name path mpass entries
+            else if (response `elem` ["L", "l", "(L)", "(l)"])
+                then handleList name path mpass entries
                 else if (response `elem` ["A", "a", "(A)", "(a)"]) 
-                    then do
-                        clearScreen                                                                 -- This block takes in the information for a new Entry from the user
-                        putStrLn "What is the name of your new entry?"              -- Creates the entry and adds it to the database
-                        newName <- getLine
-                        putStrLn "What is the username of your new entry?"
-                        newUser <- getLine
-                        putStrLn "What is the password of your new entry?"
-                        newPass <- getLine
-                        let newEntries = addEntry entries (Entry newName newUser newPass)
-                        putStrLn "Completed"                                         -- Not sure if these completed messages are useful, can remove
-                        mainScreen name path mpass newEntries
+                    then handleAdd name path mpass entries
                     else if (response `elem` ["R", "r", "(R)", "(r)"]) 
-                        then do
-                            clearScreen                                                              -- This block removes an entry from the database
-                            putStrLn "What is the name of the entry you wish to remove?"
-                            entryName <- getLine
-                            let newEntries = removeEntry entries entryName
-                            putStrLn "Completed"
-                            mainScreen name path mpass newEntries
+                        then handleRemove name path mpass entries
                         else if (response `elem` ["E", "e", "(E)", "(e)"])
-                            then do                                                           -- This block edits an entry rom the the database (more info in editOptions function)
-                                clearScreen
-                                putStrLn "What is the name of the entry you wish to edit?"
-                                entryName <- getLine
-                                putStrLn "Would you like to edit the name [N], username [U], or password [P]?"
-                                editParam <- getLine
-                                putStrLn "Enter the new value of the parameter."
-                                newParam <- getLine
-                                let newEntries = editOptions entries entryName editParam newParam
-                                putStrLn "Completed"
-                                mainScreen name path mpass newEntries
-                                else if (response `elem` ["S", "s", "(S)", "(s)"])
-                                    then do                                                                -- This block encodes the database into JSON, encrypts it, and then writes to file
-                                        clearScreen
-                                        let jstring = Data.Aeson.encode entries                            -- Here we encode our [Entry] (ie. our database) into JSON, the function returns a lazy ByteString
-                                        let strictEntries = BL.toStrict jstring                            -- Convert the lazy ByteString to strict ByteString for use in encryption function
-                                        let key = (BS.pack mpass)                                          -- Convert master password into strict ByteString for use in encryption function
-                                        let Right (Jwt jwt) = hmacEncode HS256 key strictEntries           -- Encrypt function has type (Either JwtError Jwt), Right is successfull encryption returns type Jwt
-                                        catch (BS.writeFile path jwt) (\(e::IOException) -> do             -- Write the encrypted JSON into a file and exit application.
-                                            putStrLn "Unable to save file, perhaps file name is invalid?"  -- Throw IOException if file name is invalid and exit out of application
-                                            putStrLn "Press any key to exit."
-                                            getResponse <- getLine
-                                            putStrLn "Thank you :)")                                    
-                                        return []
-                                    else if (response `elem` ["P", "p", "(P)", "(p)"])
-                                        then do
-                                             clearScreen
-                                             putStrLn "Your Generated Password is: "
-                                             let up = Uppercase
-                                             let lo = Lowercase
-                                             let di = Digit
-                                             let sy = Symbol
-                                             let pfUp = Include up
-                                             let pfLo = Include lo
-                                             let pfDi = Include di
-                                             let pfSy = Include sy
-                                             let pfLe = Length 14
-                                             genPass <- PS.generatePassword [pfUp, pfLo, pfDi, pfSy, pfLe]
-                                             putStrLn genPass
-                                             putStrLn ""
-                                             putStrLn "Press any key to clear the password and return to the main screen."
-                                             getResponse <- getLine
-                                             mainScreen name path mpass entries
+                            then handleEdit name path mpass entries
+                                else if (response `elem` ["P", "p", "(P)", "(p)"])
+                                    then handleGenPass name path mpass entries
+                                    else if (response `elem` ["S", "s", "(S)", "(s)"])
+                                        then handleSave name path mpass entries
                                         else do
-                                        putStrLn "Invalid response, please try again."   -- If we recieve invalid input, simply print error message and return to main-screen
-                                        mainScreen name path mpass entries
-                    
+                                            putStrLn "Invalid response, please try again."   -- If we recieve invalid input, simply print error message and return to main-screen
+                                            mainScreen name path mpass entries
+
+
+-- ###############################################################################################################
+-- ############################ I/O command function to clean-up  mainScreen function ############################
+-- ###############################################################################################################
+handleGet :: String -> String -> String -> [Entry] -> IO [Entry]
+-- Handles the I/O of the get password command. Gets specified password and copies to clipboard.
+handleGet name path mpass entries = do
+    clearScreen
+    putStrLn "Enter the name of the entry whose password you want."
+    entryName <- getLine
+    if inDatabase entries entryName
+        then do
+            setClipboardString (getPassword entries entryName)
+            putStrLn "Password has been copied to your clipboard"
+            putStrLn ""
+            putStrLn "Press any key to return to the main screen."
+            getResponse <- getLine
+            mainScreen name path mpass entries 
+        else do
+            putStrLn "Entry not found."
+            putStrLn ""
+            putStrLn "Press any key to return to the main screen."
+            getResponse <- getLine
+            mainScreen name path mpass entries
+
+handleList :: String -> String -> String -> [Entry] -> IO [Entry]
+-- Handles the I/O of the list entries command.
+handleList name path mpass entries = do
+    listEntries entries
+    putStrLn ""
+    putStrLn "Press any key to clear the list and return to the main screen."
+    getResponse <- getLine
+    mainScreen name path mpass entries
+
+handleAdd :: String -> String -> String -> [Entry] -> IO [Entry]
+-- Handles the I/O of the add entry command.
+handleAdd name path mpass entries = do
+    clearScreen
+    putStrLn "What is the name of your new entry? Remember entry names must be unique."
+    newName <- getLine
+    if inDatabase entries newName
+        then do
+            putStrLn "Entry with that name already exists. Please try again with a different name or remove the existing entry."
+            putStrLn ""
+            putStrLn "Press any key to return to the main screen."
+            getResponse <- getLine
+            mainScreen name path mpass entries 
+        else do
+            putStrLn "What is the username of your new entry?"
+            newUser <- getLine
+            putStrLn "What is the password of your new entry?"
+            newPass <- getLine
+            let newEntries = addEntry entries (Entry newName newUser newPass)
+            mainScreen name path mpass newEntries
+
+handleRemove :: String -> String -> String -> [Entry] -> IO [Entry]
+-- Handles the I/O of the remove entry command.
+handleRemove name path mpass entries = do
+    clearScreen
+    putStrLn "What is the name of the entry you wish to remove?"
+    entryName <- getLine
+    if inDatabase entries entryName
+        then do
+            let newEntries = removeEntry entries entryName
+            mainScreen name path mpass newEntries
+        else do
+            putStrLn "Entry not found."
+            putStrLn ""
+            putStrLn "Press any key to return to the main screen."
+            getResponse <- getLine
+            mainScreen name path mpass entries
+
+handleEdit :: String -> String -> String -> [Entry] -> IO [Entry]
+-- Handles the I/O of the edit entry command.
+handleEdit name path mpass entries = do
+    clearScreen
+    putStrLn "What is the name of the entry you wish to edit?"
+    entryName <- getLine
+    if inDatabase entries entryName
+        then do
+            putStrLn "Would you like to edit the name [N], username [U], or password [P]?"
+            editParam <- getLine
+            putStrLn ""
+            putStrLn "Enter the new value of the parameter."
+            putStrLn "If editing entry names remember they must be unique, otherwise no change will occur."
+            newParam <- getLine
+            let newEntries = editOptions entries entryName editParam newParam
+            mainScreen name path mpass newEntries
+        else do
+            putStrLn "Entry not found."
+            putStrLn ""
+            putStrLn "Press any key to return to the main screen."
+            getResponse <- getLine
+            mainScreen name path mpass entries
+
+handleGenPass :: String -> String -> String -> [Entry] -> IO [Entry]
+-- Handles the I/O of the generate password command.
+handleGenPass name path mpass entries = do
+    clearScreen
+    putStrLn "Your Generated Password is: "
+    let up = Uppercase
+    let lo = Lowercase
+    let di = Digit
+    let sy = Symbol
+    let pfUp = Include up
+    let pfLo = Include lo
+    let pfDi = Include di
+    let pfSy = Include sy
+    let pfLe = Length 14
+    genPass <- PS.generatePassword [pfUp, pfLo, pfDi, pfSy, pfLe]
+    putStrLn genPass
+    putStrLn ""
+    putStrLn "Press any key to clear the password and return to the main screen."
+    getResponse <- getLine
+    mainScreen name path mpass entries
+
+handleSave :: String -> String -> String -> [Entry] -> IO [Entry]
+-- Handles the I/O of the save command.
+-- Specifically, this block encodes the database into JSON, encrypts it, and then writes to file
+handleSave name path mpass entries = do
+    clearScreen
+    let jstring = Data.Aeson.encode entries                            -- Here we encode our [Entry] (ie. our database) into JSON, the function returns a lazy ByteString
+    let strictEntries = BL.toStrict jstring                            -- Convert the lazy ByteString to strict ByteString for use in encryption function
+    let key = (BS.pack mpass)                                          -- Convert master password into strict ByteString for use in encryption function
+    let Right (Jwt jwt) = hmacEncode HS256 key strictEntries           -- Encrypt function has type (Either JwtError Jwt), Right is successfull encryption returns type Jwt
+    catch (BS.writeFile path jwt) (\(e::IOException) -> do             -- Write the encrypted JSON into a file and exit application.
+        putStrLn "Unable to save file, perhaps file name is invalid?"  -- Throw IOException if file name is invalid and exit out of application
+        putStrLn "Press any key to exit."
+        getResponse <- getLine
+        putStrLn "Thank you :)")                                    
+    return []
+
+flushScreen :: Int -> IO ()
+-- Cheeky function that just moves the terminal text from the top of the screen to the bottom
+-- this is so that when we flush the screen later on the text doesn't seemingly magically
+-- float down to the bottom of the terminal screen
+flushScreen 0 = do
+    putStrLn ""
+flushScreen num = do
+    putStrLn ""
+    flushScreen (num - 1)
+
+-- ###########################################################################################################################################
+-- ############################ Database functions - these are purely functional (Except listEntries... Shhhh...) ############################
+-- ###########################################################################################################################################
+
 inDatabase :: [Entry] -> String -> Bool
 -- Return true if the entry with the given name is in the database, false otherwise
--- *** TODO - Need to make each entry name unique ***
 inDatabase [] entryName = False
 inDatabase ((Entry n _ _):t) entryName
     | n == entryName = True
@@ -246,7 +312,7 @@ inDatabase ((Entry n _ _):t) entryName
 getPassword :: [Entry] -> String -> String
 -- Retrieves and prints password from the entry with the given name, returns failure message
 -- if entry is not found in database
-getPassword [] entryName = "Entry not found."
+getPassword [] entryName = ""
 getPassword ((Entry n _ p):t) entryName
     | n == entryName = p
     | otherwise = getPassword t entryName

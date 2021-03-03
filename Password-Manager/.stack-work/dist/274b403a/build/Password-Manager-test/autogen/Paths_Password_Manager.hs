@@ -29,12 +29,12 @@ version :: Version
 version = Version [0,1,0,0] []
 bindir, libdir, dynlibdir, datadir, libexecdir, sysconfdir :: FilePath
 
-bindir     = "C:\\Users\\Jason\\Desktop\\PasswordManager\\Password-Manager\\.stack-work\\install\\dc6fdff9\\bin"
-libdir     = "C:\\Users\\Jason\\Desktop\\PasswordManager\\Password-Manager\\.stack-work\\install\\dc6fdff9\\lib\\x86_64-windows-ghc-8.10.4\\Password-Manager-0.1.0.0-D7aaGfkTPwkEXZR96FWIk-Password-Manager-test"
-dynlibdir  = "C:\\Users\\Jason\\Desktop\\PasswordManager\\Password-Manager\\.stack-work\\install\\dc6fdff9\\lib\\x86_64-windows-ghc-8.10.4"
-datadir    = "C:\\Users\\Jason\\Desktop\\PasswordManager\\Password-Manager\\.stack-work\\install\\dc6fdff9\\share\\x86_64-windows-ghc-8.10.4\\Password-Manager-0.1.0.0"
-libexecdir = "C:\\Users\\Jason\\Desktop\\PasswordManager\\Password-Manager\\.stack-work\\install\\dc6fdff9\\libexec\\x86_64-windows-ghc-8.10.4\\Password-Manager-0.1.0.0"
-sysconfdir = "C:\\Users\\Jason\\Desktop\\PasswordManager\\Password-Manager\\.stack-work\\install\\dc6fdff9\\etc"
+bindir     = "C:\\Users\\Jason\\desktop\\PasswordManager\\Password-Manager\\.stack-work\\install\\dc6fdff9\\bin"
+libdir     = "C:\\Users\\Jason\\desktop\\PasswordManager\\Password-Manager\\.stack-work\\install\\dc6fdff9\\lib\\x86_64-windows-ghc-8.10.4\\Password-Manager-0.1.0.0-D7aaGfkTPwkEXZR96FWIk-Password-Manager-test"
+dynlibdir  = "C:\\Users\\Jason\\desktop\\PasswordManager\\Password-Manager\\.stack-work\\install\\dc6fdff9\\lib\\x86_64-windows-ghc-8.10.4"
+datadir    = "C:\\Users\\Jason\\desktop\\PasswordManager\\Password-Manager\\.stack-work\\install\\dc6fdff9\\share\\x86_64-windows-ghc-8.10.4\\Password-Manager-0.1.0.0"
+libexecdir = "C:\\Users\\Jason\\desktop\\PasswordManager\\Password-Manager\\.stack-work\\install\\dc6fdff9\\libexec\\x86_64-windows-ghc-8.10.4\\Password-Manager-0.1.0.0"
+sysconfdir = "C:\\Users\\Jason\\desktop\\PasswordManager\\Password-Manager\\.stack-work\\install\\dc6fdff9\\etc"
 
 getBinDir, getLibDir, getDynLibDir, getDataDir, getLibexecDir, getSysconfDir :: IO FilePath
 getBinDir = catchIO (getEnv "Password_Manager_bindir") (\_ -> return bindir)

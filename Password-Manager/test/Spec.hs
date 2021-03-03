@@ -7,6 +7,7 @@ main :: IO ()
 main = hspec $ do
 
     let entries = [(Entry "test" "user" "pass")] -- used in testing
+    let entries2 = [(Entry "newTest" "newUser" "newPass"), (Entry "test" "user" "pass")] -- used for editOptions test
 
     describe "Main" $ do
         describe "inDatabase" $ do
@@ -21,7 +22,7 @@ main = hspec $ do
                 getPassword entries "test" == "pass"
             
             it "returns message if Entry not in database" $
-                getPassword entries "notin" == "Entry not found."
+                getPassword entries "notin" == ""
             
         describe "addEntry" $ do
             it "adds specified Entry to database" $
@@ -40,3 +41,5 @@ main = hspec $ do
 
             it "edits Entry password to password specified by user" $
                 editOptions entries "test" "p" "editPass" == [(Entry "test" "user" "editPass")]
+            it "does not edit if the new Entry name is already associated with an existing Entry in the database." $
+                editOptions entries2 "test" "n" "newTest" == entries2
