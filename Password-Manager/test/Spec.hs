@@ -41,5 +41,6 @@ main = hspec $ do
 
             it "edits Entry password to password specified by user" $
                 editOptions entries "test" "p" "editPass" == [(Entry "test" "user" "editPass")]
+                
             it "does not edit if the new Entry name is already associated with an existing Entry in the database." $
                 editOptions entries2 "test" "n" "newTest" == entries2
